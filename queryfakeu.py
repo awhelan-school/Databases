@@ -219,3 +219,25 @@ for i in course_dict.items():
         test += 1
 
 print(len(course_dict), test)
+
+
+
+
+# SELECT DISTINCT s1,cs1,s2,cs2
+# FROM(
+# 	SELECT term, c1,c2,s1,cs1,subj as s2, crse as cs2
+# 	FROM (
+# 		SELECT c1,c2,subj as s1 ,crse as cs1
+# 		FROM (
+# 			SELECT m1.cid as c1, m2.cid as c2, m1.term as t1, m2.term as t2
+# 			FROM meeting as m1, meeting as m2
+# 			WHERE m1.cid <> m2.cid and m1.term = m2.term and m1.term::text NOT LIKE '____06' and
+# 				   m1.instructor = m2.instructor and m1.instructor <> '' and
+# 				   m1.days = m2.days and m1.days <> '' and
+# 				   m1.time = m2.time and m1.time <> '' and
+# 				   m1.build = m2.build and m1.build <> '' and
+# 				   m1.room = m2.room and m1.room <> '' and
+# 				   m1.cid < m2.cid ) R JOIN course on c1 = course.cid ) S Join course on c2 = course.cid
+# ) X
+# WHERE s1 <> s2 and cs1 <> cs2 and cs1 < cs2
+# ORDER BY s1, cs1 ASC
