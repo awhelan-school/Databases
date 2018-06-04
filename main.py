@@ -50,7 +50,7 @@ try:
     )
     """)
 
-    # Create Student Meeting
+    # Create Students Table
     cur.execute("""
     CREATE TABLE students(
         SID integer PRIMARY KEY,
@@ -60,9 +60,48 @@ try:
     )
     """)
 
+
+    # Create Enrollment
+    cur.execute("""
+    CREATE TABLE enrollment(
+        CID integer,
+        TERM integer,
+        SID integer,
+        LEVEL varchar(4),
+        UNITS float,
+        CLASS varchar(4),
+        MAJOR varchar(4),
+        GRADE varchar(4),
+        STATUS varchar(4),
+        PRIMARY KEY(CID, TERM, SID)
+    )
+    """)
+
+
+    # Create GPA
+    cur.execute("""
+    CREATE TABLE gpa(
+        GRADE varchar(2) PRIMARY KEY,
+        VALUE float
+    )
+    """)
+
+    grades = [('A+',4.0), ('A',4.0), ('A-',3.7),
+              ('B+',3.3), ('B',3.0), ('B-',2.7),
+              ('C+',2.3), ('C',2.0), ('C-',1.7),
+              ('D+',1.3), ('D',1.0), ('D-',0.7),
+              ('F',0.0)
+        ]
+
+    SQL = "INSERT INTO gpa VALUES (%s, %s);"
+    cur.executemany(SQL,grades)
+
     conn.commit()
 except:
     print("FAILED TO CREATE TABLE\n")
+
+
+
 
 
 
@@ -93,6 +132,7 @@ for year in range(start_year, end_year+1):
         batch_course = []
         batch_meeting = []
         batch_student = []
+        batch_enrollment = []
 
         # Skip Blank Header
         next(reader)
@@ -161,6 +201,13 @@ for year in range(start_year, end_year+1):
                     else:
                         continue
 
+                # Add enrollment
+                for s in student_list[1:]:
+                    enrollment_tuple = [course_data[0], course_data[1]]
+                    enrollment_tuple.append(s[1])
+                    enrollment_tuple.extend(s[4:10])
+                    batch_enrollment.append(tuple(enrollment_tuple))
+
 
 
         # ADD Batch to DB
@@ -178,5 +225,9 @@ for year in range(start_year, end_year+1):
         # Add Static Student Info
         SQL = "INSERT INTO students VALUES (%s, %s, %s, %s);"
         cur.executemany(SQL, batch_student)
+
+        # Add Class enrollment
+        SQL = "INSERT INTO enrollment VALUES (%s, %s, %s, %s, NULLIF(%s,'')::float, %s, %s, %s, %s);"
+        cur.executemany(SQL, batch_enrollment)
 
         conn.commit()
