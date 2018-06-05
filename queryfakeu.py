@@ -319,81 +319,151 @@ cur = conn.cursor()
 #     print(i)
 
 
-# 3G TRANSFER INTO ABC
-cur.execute("""
-    WITH transfers AS
-    (
-    SELECT e1.major as previous_major, count(*) as number_switched
-    FROM enrollment as e1, enrollment as e2
-    WHERE e1.sid = e2.sid and e1.major <> e2.major and e1.term < e2.term and e2.major LIKE 'ABC%' and e1.major NOT LIKE 'ABC%'
-    GROUP BY e1.major
-    ORDER BY number_switched DESC
-    )
-
-    SELECT previous_major, number_switched, number_switched / (SUM(number_switched) OVER ()) AS percent_switched
-    FROM transfers
-    ORDER BY number_switched DESC
-""")
-
-top_transfers = cur.fetchall()[0:5]
-transfer_dict = defaultdict(lambda:0)
-
-print("PROBLEM 3G: Transfers into ABC")
-# Top Transfers
-for t in top_transfers:
-    transfer_dict[t[0]] = float(t[2])
-
-
-plt.bar(range(len(transfer_dict)), list(transfer_dict.values()), align='center')
-plt.xticks(range(len(transfer_dict)), list(transfer_dict.keys()))
-plt.show()
-
-
-# 3H TRANSFER FROM ABC
-cur.execute("""
-    WITH transfers AS
-    (
-    SELECT e2.major as new_major, count(*) as number_switched
-    FROM enrollment as e1, enrollment as e2
-    WHERE e1.sid = e2.sid and e1.major <> e2.major and e1.term < e2.term and e2.major NOT LIKE 'ABC%' and e1.major LIKE 'ABC%'
-    GROUP BY e2.major
-    ORDER BY number_switched DESC
-    )
-
-    SELECT new_major, number_switched, number_switched / (SUM(number_switched) OVER ()) AS percent_switched
-    FROM transfers
-    ORDER BY number_switched DESC
-""")
-
-top_transfers = cur.fetchall()[0:5]
-transfer_dict = defaultdict(lambda:0)
-
-print("PROBLEM 3H: Transfers into ABC")
-# Top Transfers
-for t in top_transfers:
-    transfer_dict[t[0]] = float(t[2])
-
-
-plt.bar(range(len(transfer_dict)), list(transfer_dict.values()), align='center')
-plt.xticks(range(len(transfer_dict)), list(transfer_dict.keys()))
-plt.show()
-
-
-# PROBLEM 5A
-
-# WITH student_courses AS
-# (
-# SELECT course.cid, course.term, sid, subj, crse
-# FROM enrollment
-# JOIN course on course.cid = enrollment.cid and course.term = enrollment.term
-# )
+# # 3G TRANSFER INTO ABC
+# cur.execute("""
+#     WITH transfers AS
+#     (
+#     SELECT e1.major as previous_major, count(*) as number_switched
+#     FROM enrollment as e1, enrollment as e2
+#     WHERE e1.sid = e2.sid and e1.major <> e2.major and e1.term < e2.term and e2.major LIKE 'ABC%' and e1.major NOT LIKE 'ABC%'
+#     GROUP BY e1.major
+#     ORDER BY number_switched DESC
+#     )
 #
-# SELECT R.subj, R.crse, R.currently_taking, student_courses.subj, student_courses.crse, count(*) as pre_requisite, (count(*)::NUMERIC / R.currently_taking::NUMERIC) as percent_pre
-# FROM
-# (
-# 	SELECT cid, term, sid, subj, crse, count(*) over () as currently_taking
-# 	FROM student_courses
-# 	WHERE subj = 'ABC' and crse = 203
-# ) R JOIN student_courses ON R.sid = student_courses.sid and R.term > student_courses.term
-# GROUP BY R.subj, R.crse, R.currently_taking, student_courses.subj, student_courses.crse
-# ORDER BY percent_pre DESC
+#     SELECT previous_major, number_switched, number_switched / (SUM(number_switched) OVER ()) AS percent_switched
+#     FROM transfers
+#     ORDER BY number_switched DESC
+# """)
+#
+# top_transfers = cur.fetchall()[0:5]
+# transfer_dict = defaultdict(lambda:0)
+#
+# print("PROBLEM 3G: Transfers into ABC")
+# # Top Transfers
+# for t in top_transfers:
+#     transfer_dict[t[0]] = float(t[2])
+#
+#
+# plt.bar(range(len(transfer_dict)), list(transfer_dict.values()), align='center')
+# plt.xticks(range(len(transfer_dict)), list(transfer_dict.keys()))
+# plt.show()
+#
+#
+# # 3H TRANSFER FROM ABC
+# cur.execute("""
+#     WITH transfers AS
+#     (
+#     SELECT e2.major as new_major, count(*) as number_switched
+#     FROM enrollment as e1, enrollment as e2
+#     WHERE e1.sid = e2.sid and e1.major <> e2.major and e1.term < e2.term and e2.major NOT LIKE 'ABC%' and e1.major LIKE 'ABC%'
+#     GROUP BY e2.major
+#     ORDER BY number_switched DESC
+#     )
+#
+#     SELECT new_major, number_switched, number_switched / (SUM(number_switched) OVER ()) AS percent_switched
+#     FROM transfers
+#     ORDER BY number_switched DESC
+# """)
+#
+# top_transfers = cur.fetchall()[0:5]
+# transfer_dict = defaultdict(lambda:0)
+#
+# print("PROBLEM 3H: Transfers into ABC")
+# # Top Transfers
+# for t in top_transfers:
+#     transfer_dict[t[0]] = float(t[2])
+#
+#
+# plt.bar(range(len(transfer_dict)), list(transfer_dict.values()), align='center')
+# plt.xticks(range(len(transfer_dict)), list(transfer_dict.keys()))
+# plt.show()
+
+# Problem 5A
+cur.execute("""
+WITH student_courses AS
+(
+SELECT course.cid, course.term, sid, subj, crse
+FROM enrollment
+JOIN course on course.cid = enrollment.cid and course.term = enrollment.term
+)
+
+SELECT R.subj, R.crse, R.currently_taking, student_courses.subj, student_courses.crse, count(*) as pre_requisite, (count(*)::NUMERIC / R.currently_taking::NUMERIC) as percent_pre
+FROM
+(
+ 	SELECT cid, term, sid, subj, crse, count(*) over () as currently_taking
+	FROM student_courses
+	WHERE subj = 'ABC' and crse = 203
+) R JOIN student_courses ON R.sid = student_courses.sid and R.term > student_courses.term
+GROUP BY R.subj, R.crse, R.currently_taking, student_courses.subj, student_courses.crse
+HAVING (count(*)::NUMERIC / R.currently_taking::NUMERIC) > 0.5
+ORDER BY percent_pre DESC
+""")
+pre_courses = cur.fetchall()
+
+print("EXTRA CREDIT: 5A")
+print("PREREQUISITES FOR ABC 203")
+for i in range(50,105,5):
+    print("\nINCREMENT: %s" % i)
+    for x in pre_courses:
+        if (float(x[6])*100) >= i:
+            print("SUBJ: %s | CRSE: %s" % x[3:5])
+
+
+cur.execute("""
+WITH student_courses AS
+(
+SELECT course.cid, course.term, sid, subj, crse
+FROM enrollment
+JOIN course on course.cid = enrollment.cid and course.term = enrollment.term
+)
+
+SELECT R.subj, R.crse, R.currently_taking, student_courses.subj, student_courses.crse, count(*) as pre_requisite, (count(*)::NUMERIC / R.currently_taking::NUMERIC) as percent_pre
+FROM
+(
+ 	SELECT cid, term, sid, subj, crse, count(*) over () as currently_taking
+	FROM student_courses
+	WHERE subj = 'ABC' and crse = 210
+) R JOIN student_courses ON R.sid = student_courses.sid and R.term > student_courses.term
+GROUP BY R.subj, R.crse, R.currently_taking, student_courses.subj, student_courses.crse
+HAVING (count(*)::NUMERIC / R.currently_taking::NUMERIC) > 0.5
+ORDER BY percent_pre DESC
+""")
+pre_courses = cur.fetchall()
+
+print("\n\n***************************************************************\n\n")
+print("\nPREREQUISITES FOR ABC 210")
+for i in range(50,105,5):
+    print("\nINCREMENT: %s" % i)
+    for x in pre_courses:
+        if (float(x[6])*100) >= i:
+            print("SUBJ: %s | CRSE: %s" % x[3:5])
+
+
+cur.execute("""
+WITH student_courses AS
+(
+SELECT course.cid, course.term, sid, subj, crse
+FROM enrollment
+JOIN course on course.cid = enrollment.cid and course.term = enrollment.term
+)
+
+SELECT R.subj, R.crse, R.currently_taking, student_courses.subj, student_courses.crse, count(*) as pre_requisite, (count(*)::NUMERIC / R.currently_taking::NUMERIC) as percent_pre
+FROM
+(
+ 	SELECT cid, term, sid, subj, crse, count(*) over () as currently_taking
+	FROM student_courses
+	WHERE subj = 'ABC' and crse = 222
+) R JOIN student_courses ON R.sid = student_courses.sid and R.term > student_courses.term
+GROUP BY R.subj, R.crse, R.currently_taking, student_courses.subj, student_courses.crse
+HAVING (count(*)::NUMERIC / R.currently_taking::NUMERIC) > 0.5
+ORDER BY percent_pre DESC
+""")
+pre_courses = cur.fetchall()
+
+print("\n\n***************************************************************\n\n")
+print("\nPREREQUISITES FOR ABC 222")
+for i in range(50,105,5):
+    print("\nINCREMENT: %s" % i)
+    for x in pre_courses:
+        if (float(x[6])*100) >= i:
+            print("SUBJ: %s | CRSE: %s" % x[3:5])
